@@ -102,12 +102,7 @@ public class Utils {
                 if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
                     List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
                     for (HttpCookie aCookie : parsedCookies) {
-                        // expires = max age
-                        // does HttpCookie support the "httpOnly" field?  hard coded to false for now.
-                        final boolean httpOnly = false;
-                        requestCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue(), aCookie.getPath(), aCookie.getDomain(),
-                                new Date(aCookie.getMaxAge()), httpOnly, aCookie.getSecure(), comment
-                                ));
+                        requestCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
                     }
                 }
             }
@@ -141,12 +136,7 @@ public class Utils {
                 if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
                     List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
                     for (HttpCookie aCookie : parsedCookies) {
-                        // expires = max age
-                        // does HttpCookie support the "httpOnly" field?  hard coded to false for now.
-                        final boolean httpOnly = false;
-                        responseCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue(), aCookie.getPath(), aCookie.getDomain(),
-                                new Date(aCookie.getMaxAge()), httpOnly, aCookie.getSecure(), comment
-                                ));
+                        responseCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
                     }
                 }
             }
