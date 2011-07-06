@@ -177,7 +177,7 @@ public class Utils {
             final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
             final String redirectURL = "";
 
-            HarResponse response = new HarResponse(status, statusText, responseHttpVersion, requestCookies, requestHeaders, content,
+            final HarResponse response = new HarResponse(status, statusText, responseHttpVersion, responseCookies, responseHeaders, content,
                     redirectURL, headersSize, bodySize, comment);
 
             // Har entry is now complete.
