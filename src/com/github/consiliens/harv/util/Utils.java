@@ -11,6 +11,7 @@ import static com.github.consiliens.harv.util.Invoke.invoke;
 import static com.github.consiliens.harv.util.Invoke.invokeStatic;
 
 import java.io.File;
+import java.net.HttpCookie;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +32,7 @@ import com.subgraph.vega.internal.model.WorkspaceEntry;
 
 import edu.umass.cs.benchlab.har.HarCache;
 import edu.umass.cs.benchlab.har.HarContent;
+import edu.umass.cs.benchlab.har.HarCookie;
 import edu.umass.cs.benchlab.har.HarCookies;
 import edu.umass.cs.benchlab.har.HarEntry;
 import edu.umass.cs.benchlab.har.HarEntryTimings;
@@ -83,8 +85,8 @@ public class Utils {
             final String method = line.getMethod();
             final String url = line.getUri();
             final String httpVersion = line.getProtocolVersion().toString();
-            final HarCookies cookies = new HarCookies();
-            final HarHeaders headers = new HarHeaders();
+            final HarCookies requestCookies = new HarCookies();
+            final HarHeaders requestHeaders = new HarHeaders();
             final HarQueryString queryString = new HarQueryString();
             final HarPostData postData = null;
             final long headersSize = -1;
@@ -95,7 +97,19 @@ public class Utils {
                 final String headerName = header.getName();
                 final String headerValue = header.getValue();
 
-                headers.addHeader(new HarHeader(headerName, headerValue));
+                requestHeaders.addHeader(new HarHeader(headerName, headerValue));
+                
+                if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
+                    List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
+                    for (HttpCookie aCookie : parsedCookies) {
+                        // expires = max age
+                        // does HttpCookie support the "httpOnly" field?  hard coded to false for now.
+                        final boolean httpOnly = false;
+                        requestCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue(), aCookie.getPath(), aCookie.getDomain(),
+                                new Date(aCookie.getMaxAge()), httpOnly, aCookie.getSecure(), comment
+                                ));
+                    }
+                }
             }
 
             String connection = String.valueOf(record.getRequestId());
@@ -105,7 +119,7 @@ public class Utils {
             final HarEntryTimings timings = getFakeHarEntryTimings();
             final String serverIPAddress = null;
 
-            final HarRequest request = new HarRequest(method, url, httpVersion, cookies, headers, queryString,
+            final HarRequest request = new HarRequest(method, url, httpVersion, requestCookies, requestHeaders, queryString,
                     postData, headersSize, bodySize, comment);
 
             // Process response.
@@ -115,10 +129,26 @@ public class Utils {
             final String statusText = responseStatus.getReasonPhrase();
             final String responseHttpVersion = httpResponse.getProtocolVersion().toString();
 
+            final HarCookies responseCookies = new HarCookies();
             final HarHeaders responseHeaders = new HarHeaders();
 
             for (Header header : httpResponse.getAllHeaders()) {
-                responseHeaders.addHeader(new HarHeader(header.getName(), header.getValue()));
+                final String headerName = header.getName();
+                final String headerValue = header.getValue();
+
+                responseHeaders.addHeader(new HarHeader(headerName, headerValue));
+                
+                if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
+                    List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
+                    for (HttpCookie aCookie : parsedCookies) {
+                        // expires = max age
+                        // does HttpCookie support the "httpOnly" field?  hard coded to false for now.
+                        final boolean httpOnly = false;
+                        responseCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue(), aCookie.getPath(), aCookie.getDomain(),
+                                new Date(aCookie.getMaxAge()), httpOnly, aCookie.getSecure(), comment
+                                ));
+                    }
+                }
             }
 
             long size = 0;
@@ -147,7 +177,7 @@ public class Utils {
             final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
             final String redirectURL = "";
 
-            HarResponse response = new HarResponse(status, statusText, responseHttpVersion, cookies, headers, content,
+            HarResponse response = new HarResponse(status, statusText, responseHttpVersion, requestCookies, requestHeaders, content,
                     redirectURL, headersSize, bodySize, comment);
 
             // Har entry is now complete.
