@@ -4,7 +4,8 @@ HAR exporter for Subgraph Vega
 Dependencies:
 
 * [Vega](https://github.com/subgraph/Vega)
-* [HarLib](https://sites.google.com/site/frogthinkerorg/projects/harlib)
+* [HarLib](https://sites.google.com/site/frogthinkerorg/projects/harlib) [harlib-jackson-1.0b8.jar](http://downloads.sourceforge.net/project/benchlab/HarLib/1.0b8/harlib-jackson-1.0b8.jar)
+* [JUnit](https://github.com/KentBeck/junit/downloads)
 
 Developed using [Eclipse Indigo](http://www.eclipse.org/downloads/).
 
