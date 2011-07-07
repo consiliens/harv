@@ -23,7 +23,7 @@ import com.subgraph.vega.api.model.IWorkspace;
  */
 public abstract class Run {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final HarManager har = new HarManager();
         final IWorkspace space = openWorkspaceByNumber("00");
 

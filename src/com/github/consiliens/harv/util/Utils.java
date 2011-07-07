@@ -46,7 +46,7 @@ import edu.umass.cs.benchlab.har.ISO8601DateFormatter;
 
 public class Utils {
 
-    public static void p(Object o) {
+    public static void p(final Object o) {
         if (o == null) {
             System.out.println("null");
             return;
@@ -64,7 +64,7 @@ public class Utils {
         final long wait = 0L;
         final long receive = 0L;
         final long ssl = 0L;
-        final String comment = "";
+        final String comment = null;
 
         return new HarEntryTimings(blocked, dns, connect, send, wait, receive, ssl, comment);
     }
@@ -74,7 +74,7 @@ public class Utils {
 
         long headersSize = 0;
 
-        for (Header header : allHeaders) {
+        for (final Header header : allHeaders) {
             final String headerName = header.getName();
             final String headerValue = header.getValue();
 
@@ -83,10 +83,9 @@ public class Utils {
             harHeaders.addHeader(new HarHeader(headerName, headerValue));
 
             if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
-                List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
-                for (HttpCookie aCookie : parsedCookies) {
+                final List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
+                for (final HttpCookie aCookie : parsedCookies)
                     harCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
-                }
             }
         }
 
@@ -109,7 +108,7 @@ public class Utils {
         final HarQueryString queryString = new HarQueryString();
         final HarPostData postData = null;
         final long bodySize = -1;
-        final String comment = "";
+        final String comment = null;
 
         return new HarRequest(method, url, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
                 comment);
@@ -166,12 +165,12 @@ public class Utils {
         for (final IRequestLogRecord record : recordsList) {
 
             final String pageRef = null;
-
             Date startedDateTime = null;
+
             try {
                 startedDateTime = ISO8601DateFormatter.parseDate(ISO8601DateFormatter.format(new Date(record
                         .getTimestamp())));
-            } catch (ParseException e) {
+            } catch (final ParseException e) {
                 e.printStackTrace();
             }
 
