@@ -11,10 +11,10 @@ import static com.github.consiliens.harv.util.Invoke.invoke;
 import static com.github.consiliens.harv.util.Invoke.invokeStatic;
 
 import java.io.File;
-import java.net.HttpCookie;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -22,6 +22,9 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.RequestLine;
 import org.apache.http.StatusLine;
+import org.jboss.netty.handler.codec.http.Cookie;
+import org.jboss.netty.handler.codec.http.CookieDateFormat;
+import org.jboss.netty.handler.codec.http.CookieDecoder;
 
 import com.subgraph.vega.api.model.IModel;
 import com.subgraph.vega.api.model.IWorkspace;
@@ -73,6 +76,8 @@ public class Utils {
             final HarCookies harCookies) {
 
         long headersSize = 0;
+        final CookieDecoder decoder = new CookieDecoder();
+        final CookieDateFormat format = new CookieDateFormat();
 
         for (final Header header : allHeaders) {
             final String headerName = header.getName();
@@ -83,9 +88,19 @@ public class Utils {
             harHeaders.addHeader(new HarHeader(headerName, headerValue));
 
             if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
-                final List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
-                for (final HttpCookie aCookie : parsedCookies)
-                    harCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
+                final Set<Cookie> cookies = decoder.decode(headerValue);
+
+                for (final Cookie cookie : cookies) {
+                    // Is it correct to set expires to "1969-12-31T16:59:59.000-07:00" if there's no maxAge?
+                    Date expires = null;
+                    try {
+                        expires = format.parse(format.format(cookie.getMaxAge()));
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                    harCookies.addCookie(new HarCookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie
+                            .getDomain(), expires, cookie.isHttpOnly(), cookie.isSecure(), cookie.getComment()));
+                }
             }
         }
 
