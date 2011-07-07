@@ -14,6 +14,7 @@ import java.io.File;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.Header;
@@ -25,6 +26,7 @@ import org.apache.http.StatusLine;
 import org.jboss.netty.handler.codec.http.Cookie;
 import org.jboss.netty.handler.codec.http.CookieDateFormat;
 import org.jboss.netty.handler.codec.http.CookieDecoder;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import com.subgraph.vega.api.model.IModel;
 import com.subgraph.vega.api.model.IWorkspace;
@@ -42,6 +44,7 @@ import edu.umass.cs.benchlab.har.HarEntryTimings;
 import edu.umass.cs.benchlab.har.HarHeader;
 import edu.umass.cs.benchlab.har.HarHeaders;
 import edu.umass.cs.benchlab.har.HarPostData;
+import edu.umass.cs.benchlab.har.HarQueryParam;
 import edu.umass.cs.benchlab.har.HarQueryString;
 import edu.umass.cs.benchlab.har.HarRequest;
 import edu.umass.cs.benchlab.har.HarResponse;
@@ -91,11 +94,12 @@ public class Utils {
                 final Set<Cookie> cookies = decoder.decode(headerValue);
 
                 for (final Cookie cookie : cookies) {
-                    // Is it correct to set expires to "1969-12-31T16:59:59.000-07:00" if there's no maxAge?
+                    // Is it correct to set expires to
+                    // "1969-12-31T16:59:59.000-07:00" if there's no maxAge?
                     Date expires = null;
                     try {
                         expires = format.parse(format.format(cookie.getMaxAge()));
-                    } catch (ParseException e) {
+                    } catch (final ParseException e) {
                         e.printStackTrace();
                     }
                     harCookies.addCookie(new HarCookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie
@@ -112,20 +116,27 @@ public class Utils {
         final RequestLine line = httpRequest.getRequestLine();
 
         final String method = line.getMethod();
-        final String url = line.getUri();
+        final String uri = line.getUri();
         final String httpVersion = line.getProtocolVersion().toString();
 
         final HarHeaders headers = new HarHeaders();
         final HarCookies cookies = new HarCookies();
         final long headersSize = extractHeadersAndCookies(httpRequest.getAllHeaders(), headers, cookies);
 
-        // Unimplemented.
         final HarQueryString queryString = new HarQueryString();
+        final QueryStringDecoder decoder = new QueryStringDecoder(uri);
+
+        for (final Map.Entry<String, List<String>> param : decoder.getParameters().entrySet())
+            // Add multiple values for the same key as separate params.
+            // /test?t=1&t=2
+            for (final String value : param.getValue())
+                queryString.addQueryParam(new HarQueryParam(param.getKey(), value));
+
         final HarPostData postData = null;
         final long bodySize = -1;
         final String comment = null;
 
-        return new HarRequest(method, url, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
+        return new HarRequest(method, uri, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
                 comment);
     }
 
