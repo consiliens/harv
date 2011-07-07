@@ -12,6 +12,7 @@ import static com.github.consiliens.harv.util.Invoke.invokeStatic;
 
 import java.io.File;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -125,12 +126,19 @@ public class Utils {
 
         final HarQueryString queryString = new HarQueryString();
         final QueryStringDecoder decoder = new QueryStringDecoder(uri);
+        final List<HarQueryParam> harParamsList = new ArrayList<HarQueryParam>();
 
-        for (final Map.Entry<String, List<String>> param : decoder.getParameters().entrySet())
-            // Add multiple values for the same key as separate params.
+        for (final Map.Entry<String, List<String>> param : decoder.getParameters().entrySet()) {
+            final String name = param.getKey();
+            // Create separate params for multiple values with the same key.
             // /test?t=1&t=2
-            for (final String value : param.getValue())
-                queryString.addQueryParam(new HarQueryParam(param.getKey(), value));
+            for (final String value : param.getValue()) {
+                harParamsList.add(new HarQueryParam(name, value));
+            }
+        }
+
+        queryString.setQueryParams(harParamsList);
+        harParamsList.clear();
 
         final HarPostData postData = null;
         final long bodySize = -1;
