@@ -69,8 +69,104 @@ public class Utils {
         return new HarEntryTimings(blocked, dns, connect, send, wait, receive, ssl, comment);
     }
 
+    public static long extractHeadersAndCookies(final Header[] allHeaders, final HarHeaders harHeaders,
+            final HarCookies harCookies) {
+
+        long headersSize = 0;
+
+        for (Header header : allHeaders) {
+            final String headerName = header.getName();
+            final String headerValue = header.getValue();
+
+            headersSize += headerName.getBytes().length + headerValue.getBytes().length;
+
+            harHeaders.addHeader(new HarHeader(headerName, headerValue));
+
+            if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
+                List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
+                for (HttpCookie aCookie : parsedCookies) {
+                    harCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
+                }
+            }
+        }
+
+        return headersSize;
+    }
+
+    /** Request. **/
+    public static HarRequest createHarRequest(final HttpRequest httpRequest) {
+        final RequestLine line = httpRequest.getRequestLine();
+
+        final String method = line.getMethod();
+        final String url = line.getUri();
+        final String httpVersion = line.getProtocolVersion().toString();
+
+        final HarHeaders headers = new HarHeaders();
+        final HarCookies cookies = new HarCookies();
+        final long headersSize = extractHeadersAndCookies(httpRequest.getAllHeaders(), headers, cookies);
+
+        // Unimplemented.
+        final HarQueryString queryString = new HarQueryString();
+        final HarPostData postData = null;
+        final long bodySize = -1;
+        final String comment = "";
+
+        return new HarRequest(method, url, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
+                comment);
+    }
+
+    /** Response. **/
+    public static HarResponse createHarResponse(final HttpResponse httpResponse) {
+        final StatusLine responseStatus = httpResponse.getStatusLine();
+        final int status = responseStatus.getStatusCode();
+        final String statusText = responseStatus.getReasonPhrase();
+        final String responseHttpVersion = httpResponse.getProtocolVersion().toString();
+
+        final HarCookies cookies = new HarCookies();
+        final HarHeaders headers = new HarHeaders();
+
+        final long headersSize = extractHeadersAndCookies(httpResponse.getAllHeaders(), headers, cookies);
+
+        long size = 0;
+        String mimeType = "";
+        String encoding = "";
+
+        final HttpEntity contentEntity = httpResponse.getEntity();
+        if (contentEntity != null) {
+            size = contentEntity.getContentLength();
+
+            final Header contentType = contentEntity.getContentType();
+            if (contentType != null) {
+                final String contentTypeValue = contentType.getValue();
+                mimeType = contentTypeValue == null ? "" : contentTypeValue;
+            }
+
+            final Header contentEnconding = contentEntity.getContentEncoding();
+            if (contentEnconding != null) {
+                final String contentEncondingValue = contentEnconding.getValue();
+                encoding = contentEncondingValue == null ? "" : contentEncondingValue;
+            }
+        }
+
+        // Not implemented.
+        final long compression = 0;
+        final String text = null;
+        final String comment = null;
+        final String redirectURL = "";
+        final long bodySize = -1;
+
+        final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
+
+        return new HarResponse(status, statusText, responseHttpVersion, cookies, headers, content, redirectURL,
+                headersSize, bodySize, comment);
+
+    }
+
     public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final HarManager har) {
         for (final IRequestLogRecord record : recordsList) {
+
+            final String pageRef = null;
+
             Date startedDateTime = null;
             try {
                 startedDateTime = ISO8601DateFormatter.parseDate(ISO8601DateFormatter.format(new Date(record
@@ -80,95 +176,13 @@ public class Utils {
             }
 
             final long time = record.getRequestMilliseconds();
-            final HttpRequest httpRequest = record.getRequest();
-            final RequestLine line = httpRequest.getRequestLine();
-            final String method = line.getMethod();
-            final String url = line.getUri();
-            final String httpVersion = line.getProtocolVersion().toString();
-            final HarCookies requestCookies = new HarCookies();
-            final HarHeaders requestHeaders = new HarHeaders();
-            final HarQueryString queryString = new HarQueryString();
-            final HarPostData postData = null;
-            final long headersSize = -1;
-            final long bodySize = -1;
-            final String comment = null;
-
-            for (Header header : httpRequest.getAllHeaders()) {
-                final String headerName = header.getName();
-                final String headerValue = header.getValue();
-
-                requestHeaders.addHeader(new HarHeader(headerName, headerValue));
-                
-                if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
-                    List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
-                    for (HttpCookie aCookie : parsedCookies) {
-                        requestCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
-                    }
-                }
-            }
-
-            String connection = String.valueOf(record.getRequestId());
-
-            final String pageRef = null;
+            final HarRequest request = createHarRequest(record.getRequest());
+            final HarResponse response = createHarResponse(record.getResponse());
             final HarCache cache = null;
             final HarEntryTimings timings = getFakeHarEntryTimings();
             final String serverIPAddress = null;
-
-            final HarRequest request = new HarRequest(method, url, httpVersion, requestCookies, requestHeaders, queryString,
-                    postData, headersSize, bodySize, comment);
-
-            // Process response.
-            final HttpResponse httpResponse = record.getResponse();
-            final StatusLine responseStatus = httpResponse.getStatusLine();
-            final int status = responseStatus.getStatusCode();
-            final String statusText = responseStatus.getReasonPhrase();
-            final String responseHttpVersion = httpResponse.getProtocolVersion().toString();
-
-            final HarCookies responseCookies = new HarCookies();
-            final HarHeaders responseHeaders = new HarHeaders();
-
-            for (Header header : httpResponse.getAllHeaders()) {
-                final String headerName = header.getName();
-                final String headerValue = header.getValue();
-
-                responseHeaders.addHeader(new HarHeader(headerName, headerValue));
-                
-                if (headerValue != null && headerName.equalsIgnoreCase("Cookie")) {
-                    List<HttpCookie> parsedCookies = HttpCookie.parse(headerValue);
-                    for (HttpCookie aCookie : parsedCookies) {
-                        responseCookies.addCookie(new HarCookie(aCookie.getName(), aCookie.getValue()));
-                    }
-                }
-            }
-
-            long size = 0;
-            String mimeType = "";
-            String encoding = "";
-
-            final HttpEntity contentEntity = httpResponse.getEntity();
-            if (contentEntity != null) {
-                size = contentEntity.getContentLength();
-
-                final Header contentType = contentEntity.getContentType();
-                if (contentType != null) {
-                    final String contentTypeValue = contentType.getValue();
-                    mimeType = contentTypeValue == null ? "" : contentTypeValue;
-                }
-
-                final Header contentEnconding = contentEntity.getContentEncoding();
-                if (contentEnconding != null) {
-                    final String contentEncondingValue = contentEnconding.getValue();
-                    encoding = contentEncondingValue == null ? "" : contentEncondingValue;
-                }
-            }
-            final long compression = 0;
-            final String text = null;
-
-            final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
-            final String redirectURL = "";
-
-            final HarResponse response = new HarResponse(status, statusText, responseHttpVersion, responseCookies, responseHeaders, content,
-                    redirectURL, headersSize, bodySize, comment);
+            final String connection = String.valueOf(record.getRequestId());
+            final String comment = null;
 
             // Har entry is now complete.
             har.addEntry(new HarEntry(pageRef, startedDateTime, time, request, response, cache, timings,
