@@ -45,6 +45,7 @@ import edu.umass.cs.benchlab.har.HarEntryTimings;
 import edu.umass.cs.benchlab.har.HarHeader;
 import edu.umass.cs.benchlab.har.HarHeaders;
 import edu.umass.cs.benchlab.har.HarPostData;
+import edu.umass.cs.benchlab.har.HarPostDataParams;
 import edu.umass.cs.benchlab.har.HarQueryParam;
 import edu.umass.cs.benchlab.har.HarQueryString;
 import edu.umass.cs.benchlab.har.HarRequest;
@@ -95,13 +96,16 @@ public class Utils {
                 final Set<Cookie> cookies = decoder.decode(headerValue);
 
                 for (final Cookie cookie : cookies) {
-                    // Is it correct to set expires to
-                    // "1969-12-31T16:59:59.000-07:00" if there's no maxAge?
                     Date expires = null;
-                    try {
-                        expires = format.parse(format.format(cookie.getMaxAge()));
-                    } catch (final ParseException e) {
-                        e.printStackTrace();
+                    int maxAge = cookie.getMaxAge();
+
+                    if (maxAge != -1) {
+                        try {
+                            // TODO: Is CookieDateFormat formatting maxAge properly?
+                            expires = format.parse(format.format(maxAge));
+                        } catch (final ParseException e) {
+                            e.printStackTrace();
+                        }
                     }
                     harCookies.addCookie(new HarCookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie
                             .getDomain(), expires, cookie.isHttpOnly(), cookie.isSecure(), cookie.getComment()));
@@ -139,9 +143,15 @@ public class Utils {
 
         queryString.setQueryParams(harParamsList);
 
-        final HarPostData postData = null;
-        final long bodySize = -1;
         final String comment = null;
+        final String mimeType = null;
+        final String text = null;
+        final HarPostDataParams params = new HarPostDataParams();
+        // Either params or text is set, never both.
+        HarPostData postData = new HarPostData(mimeType, params, text, comment);
+        // Not implemented.
+        postData = null;
+        final long bodySize = -1;
 
         return new HarRequest(method, uri, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
                 comment);
