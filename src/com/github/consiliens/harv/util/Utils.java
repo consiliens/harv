@@ -138,7 +138,6 @@ public class Utils {
         }
 
         queryString.setQueryParams(harParamsList);
-        harParamsList.clear();
 
         final HarPostData postData = null;
         final long bodySize = -1;
