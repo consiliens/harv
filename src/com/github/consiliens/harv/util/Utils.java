@@ -48,6 +48,7 @@ import edu.umass.cs.benchlab.har.HarEntryTimings;
 import edu.umass.cs.benchlab.har.HarHeader;
 import edu.umass.cs.benchlab.har.HarHeaders;
 import edu.umass.cs.benchlab.har.HarPostData;
+import edu.umass.cs.benchlab.har.HarPostDataParam;
 import edu.umass.cs.benchlab.har.HarPostDataParams;
 import edu.umass.cs.benchlab.har.HarQueryParam;
 import edu.umass.cs.benchlab.har.HarQueryString;
@@ -136,30 +137,42 @@ public class Utils {
 
         final HarQueryString queryString = new HarQueryString();
         final QueryStringDecoder decoder = new QueryStringDecoder(uri);
-        final List<HarQueryParam> harParamsList = new ArrayList<HarQueryParam>();
+        final List<HarQueryParam> queryStringParams = new ArrayList<HarQueryParam>();
 
         for (final Map.Entry<String, List<String>> param : decoder.getParameters().entrySet()) {
             final String name = param.getKey();
             // Create separate params for multiple values with the same key.
             // /test?t=1&t=2
             for (final String value : param.getValue()) {
-                harParamsList.add(new HarQueryParam(name, value));
+                queryStringParams.add(new HarQueryParam(name, value));
             }
         }
 
-        queryString.setQueryParams(harParamsList);
+        queryString.setQueryParams(queryStringParams);
 
         final String comment = null;
         final String mimeType = headerValue(httpRequest.getFirstHeader("Content-Type"));
         String text = null;
-        // TODO: Add params support.
-        final HarPostDataParams params = new HarPostDataParams();
+        final HarPostDataParams postDataParams = new HarPostDataParams();
         long bodySize = -1;
 
         if (httpRequest instanceof HttpEntityEnclosingRequest) {
             try {
                 final HttpEntity entity = ((HttpEntityEnclosingRequest) httpRequest).getEntity();
-                text = streamToString(entity.getContent());
+                final String streamString = streamToString(entity.getContent());
+
+                // Handle post data params.
+                if (mimeType.toLowerCase().contains("application/x-www-form-urlencoded")) {
+                    for (final String nvString : streamString.split("&")) {
+                        final String[] nvPair = nvString.split("=");
+                        final String name = nvPair[0];
+                        final String value = nvPair.length == 1 ? "" : nvPair[1];
+                        postDataParams.addPostDataParam(new HarPostDataParam(name, value));
+                    }
+                } else {
+                    // TODO:  Not all post data should be converted to text.
+                    text = streamString;
+                }
 
                 bodySize = entity.getContentLength();
             } catch (final Exception e) {
@@ -168,7 +181,7 @@ public class Utils {
         }
 
         // Either params or text is set, never both.
-        final HarPostData postData = new HarPostData(mimeType, params, text, comment);
+        final HarPostData postData = new HarPostData(mimeType, postDataParams, text, comment);
 
         return new HarRequest(method, uri, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
                 comment);
