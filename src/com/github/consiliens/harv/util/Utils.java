@@ -170,7 +170,7 @@ public class Utils {
                         postDataParams.addPostDataParam(new HarPostDataParam(name, value));
                     }
                 } else {
-                    // TODO:  Not all post data should be converted to text.
+                    // TODO: Not all data should be converted to text.
                     text = streamString;
                 }
 
@@ -229,9 +229,15 @@ public class Utils {
             encoding = headerValue(contentEntity.getContentEncoding());
         }
 
-        // Not implemented.
+        // Compression is not implemented.
         final long compression = 0;
-        final String text = null;
+        String text = null;
+        try {
+            // TODO: Not all data should be converted to text.
+            text = streamToString(contentEntity.getContent());
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
         final String comment = null;
         // Does Location always represent the redirect URL?
         final String redirectURL = headerValue(httpResponse.getFirstHeader("Location"));
