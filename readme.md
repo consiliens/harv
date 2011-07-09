@@ -17,4 +17,6 @@ Full [HAR v1.2](http://www.softwareishard.com/blog/har-12-spec) compliance is st
 
 harv is licensed under the [EPL v1.0](http://www.eclipse.org/legal/epl-v10.html).
 
-Cookie parsing is powered by [netty-3.2.4.Final](https://github.com/netty/netty).
+[netty-3.2.4.Final](https://github.com/netty/netty).
+* Cookie parsing 
+* QueryString parsing

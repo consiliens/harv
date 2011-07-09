@@ -10,7 +10,9 @@ package com.github.consiliens.harv.util;
 import static com.github.consiliens.harv.util.Invoke.invoke;
 import static com.github.consiliens.harv.util.Invoke.invokeStatic;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +22,7 @@ import java.util.Set;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.RequestLine;
@@ -97,11 +100,12 @@ public class Utils {
 
                 for (final Cookie cookie : cookies) {
                     Date expires = null;
-                    int maxAge = cookie.getMaxAge();
+                    final int maxAge = cookie.getMaxAge();
 
                     if (maxAge != -1) {
                         try {
-                            // TODO: Is CookieDateFormat formatting maxAge properly?
+                            // TODO: Is CookieDateFormat formatting maxAge
+                            // properly?
                             expires = format.parse(format.format(maxAge));
                         } catch (final ParseException e) {
                             e.printStackTrace();
@@ -114,6 +118,13 @@ public class Utils {
         }
 
         return headersSize;
+    }
+
+    public static String headerValue(final Header header) {
+        if (header != null)
+            return header.getValue();
+
+        return null;
     }
 
     /** Request. **/
@@ -144,17 +155,46 @@ public class Utils {
         queryString.setQueryParams(harParamsList);
 
         final String comment = null;
-        final String mimeType = null;
-        final String text = null;
+        final String mimeType = headerValue(httpRequest.getFirstHeader("Content-Type"));
+        String text = null;
+        // TODO: Add params support.
         final HarPostDataParams params = new HarPostDataParams();
+        long bodySize = -1;
+
+        if (httpRequest instanceof HttpEntityEnclosingRequest) {
+            try {
+                final HttpEntity entity = ((HttpEntityEnclosingRequest) httpRequest).getEntity();
+                text = streamToString(entity.getContent());
+
+                bodySize = entity.getContentLength();
+            } catch (final Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         // Either params or text is set, never both.
-        HarPostData postData = new HarPostData(mimeType, params, text, comment);
-        // Not implemented.
-        postData = null;
-        final long bodySize = -1;
+        final HarPostData postData = new HarPostData(mimeType, params, text, comment);
 
         return new HarRequest(method, uri, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
                 comment);
+    }
+
+    /** Converts stream to a string then closes the stream. **/
+    public static String streamToString(final InputStream input) {
+        try {
+            final DataInputStream dataStream = new DataInputStream(input);
+            final byte[] dataBytes = new byte[input.available()];
+            dataStream.readFully(dataBytes);
+
+            input.close();
+            dataStream.close();
+
+            return new String(dataBytes, "UTF-8");
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     /** Response. **/
@@ -176,18 +216,9 @@ public class Utils {
         final HttpEntity contentEntity = httpResponse.getEntity();
         if (contentEntity != null) {
             size = contentEntity.getContentLength();
-
-            final Header contentType = contentEntity.getContentType();
-            if (contentType != null) {
-                final String contentTypeValue = contentType.getValue();
-                mimeType = contentTypeValue == null ? "" : contentTypeValue;
-            }
-
-            final Header contentEnconding = contentEntity.getContentEncoding();
-            if (contentEnconding != null) {
-                final String contentEncondingValue = contentEnconding.getValue();
-                encoding = contentEncondingValue == null ? "" : contentEncondingValue;
-            }
+            // TODO: Will mimeType be set properly?
+            mimeType = headerValue(contentEntity.getContentType());
+            encoding = headerValue(contentEntity.getContentEncoding());
         }
 
         // Not implemented.
