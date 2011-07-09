@@ -68,16 +68,11 @@ public class Utils {
 
     /** Create a fake object until Vega adds support for timings. **/
     public static HarEntryTimings getFakeHarEntryTimings() {
-        final long blocked = 0L;
-        final long dns = 0L;
-        final long connect = 0L;
         final long send = 0L;
         final long wait = 0L;
         final long receive = 0L;
-        final long ssl = 0L;
-        final String comment = null;
 
-        return new HarEntryTimings(blocked, dns, connect, send, wait, receive, ssl, comment);
+        return new HarEntryTimings(send, wait, receive);
     }
 
     public static long extractHeadersAndCookies(final Header[] allHeaders, final HarHeaders harHeaders,
@@ -209,7 +204,7 @@ public class Utils {
 
         final long headersSize = extractHeadersAndCookies(httpResponse.getAllHeaders(), headers, cookies);
 
-        long size = 0;
+        long size = -1;
         String mimeType = "";
         String encoding = "";
 
@@ -225,8 +220,9 @@ public class Utils {
         final long compression = 0;
         final String text = null;
         final String comment = null;
-        final String redirectURL = "";
-        final long bodySize = -1;
+        // Does Location always represent the redirect URL?
+        final String redirectURL = headerValue(httpResponse.getFirstHeader("Location"));
+        final long bodySize = size;
 
         final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
 
