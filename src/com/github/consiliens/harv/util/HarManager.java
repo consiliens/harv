@@ -9,6 +9,9 @@ package com.github.consiliens.harv.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+
+import com.subgraph.vega.api.model.requests.IRequestLogRecord;
 
 import edu.umass.cs.benchlab.har.HarCreator;
 import edu.umass.cs.benchlab.har.HarEntries;
@@ -21,15 +24,24 @@ import edu.umass.cs.benchlab.har.tools.HarFileWriter;
  */
 public class HarManager {
 
-    HarLog log;
-    HarEntries entries;
+    private HarLog log;
+    private HarEntries entries;
+    private HarvConfig config;
 
     /**
-     * Creates a new HarManager.
+     * Create a new HarManager.
+     * @param creatorName the name of program creating the Har file
+     * @param creatorVersion the version of the program creating the Har file
+     * @param config the harv configuration settings
      */
-    public HarManager() {
-        log = new HarLog(new HarCreator("vega export", "0.1"));
+    public HarManager(final String creatorName, final String creatorVersion, final HarvConfig config) {
+        log = new HarLog(new HarCreator(creatorName, creatorVersion));
         entries = new HarEntries();
+        this.config = config;
+    }
+
+    public void convertRecordsToHAR(final List<IRequestLogRecord> recordsList) {
+        Utils.convertRecordsToHAR(recordsList, this, config);
     }
 
     /**
@@ -46,11 +58,11 @@ public class HarManager {
      * Once called the fields of this class are set to null and addEntry will no
      * longer work.
      */
-    public void endHAR() {
+    public void endHAR(final File outputFile) {
         log.setEntries(entries);
 
         try {
-            new HarFileWriter().writeHarFile(log, new File("test.har.json"));
+            new HarFileWriter().writeHarFile(log, outputFile);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -59,4 +71,12 @@ public class HarManager {
         log = null;
         entries = null;
     }
+
+    public HarvConfig getConfig() {
+        return config;
+    }
+
+    public void setConfig(HarvConfig config) {
+        this.config = config;
+    }       
 }

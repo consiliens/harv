@@ -7,8 +7,9 @@ Dependencies:
 
 * [Vega](https://github.com/subgraph/Vega)
 * [harlib-jackson-1.0b8.jar](http://downloads.sourceforge.net/project/benchlab/HarLib/1.0b8/harlib-jackson-1.0b8.jar)
+* [guava-r09](http://guava-libraries.googlecode.com/files/guava-r09.zip)
 
-Resources:
+Helpful Links:
 
 * [HarLib website](https://sites.google.com/site/frogthinkerorg/projects/harlib)
 * [harlib-src-1.0b8.jar](http://sourceforge.net/projects/benchlab/files/HarLib/1.0b8/harlib-src-1.0b8.jar/download)
@@ -23,3 +24,5 @@ harv is licensed under the [EPL v1.0](http://www.eclipse.org/legal/epl-v10.html)
 
 * Cookie parsing 
 * QueryString parsing
+
+[commons-codec-1.5-src](http://commons.apache.org/codec/download_codec.cgi) provides encodeHexString.

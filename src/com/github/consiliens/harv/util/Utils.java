@@ -10,9 +10,10 @@ package com.github.consiliens.harv.util;
 import static com.github.consiliens.harv.util.Invoke.invoke;
 import static com.github.consiliens.harv.util.Invoke.invokeStatic;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -32,6 +34,8 @@ import org.jboss.netty.handler.codec.http.CookieDateFormat;
 import org.jboss.netty.handler.codec.http.CookieDecoder;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 import com.subgraph.vega.api.model.IModel;
 import com.subgraph.vega.api.model.IWorkspace;
 import com.subgraph.vega.api.model.IWorkspaceEntry;
@@ -57,6 +61,9 @@ import edu.umass.cs.benchlab.har.HarResponse;
 import edu.umass.cs.benchlab.har.ISO8601DateFormatter;
 
 public class Utils {
+
+    public static final String UTF8 = "UTF-8";
+    public static final String SHA256 = "SHA-256";
 
     public static void p(final Object o) {
         if (o == null) {
@@ -87,7 +94,11 @@ public class Utils {
             final String headerName = header.getName();
             final String headerValue = header.getValue();
 
-            headersSize += headerName.getBytes().length + headerValue.getBytes().length;
+            try {
+                headersSize += headerName.getBytes(UTF8).length + headerValue.getBytes(UTF8).length;
+            } catch (final UnsupportedEncodingException e1) {
+                e1.printStackTrace();
+            }
 
             harHeaders.addHeader(new HarHeader(headerName, headerValue));
 
@@ -124,7 +135,7 @@ public class Utils {
     }
 
     /** Request. **/
-    public static HarRequest createHarRequest(final HttpRequest httpRequest) {
+    public static HarRequest createHarRequest(final HttpRequest httpRequest, final HarvConfig config) {
         final RequestLine line = httpRequest.getRequestLine();
 
         final String method = line.getMethod();
@@ -150,7 +161,7 @@ public class Utils {
 
         queryString.setQueryParams(queryStringParams);
 
-        final String comment = null;
+        String comment = null;
         final String mimeType = headerValue(httpRequest.getFirstHeader("Content-Type"));
         String text = null;
         final HarPostDataParams postDataParams = new HarPostDataParams();
@@ -159,10 +170,10 @@ public class Utils {
         if (httpRequest instanceof HttpEntityEnclosingRequest) {
             try {
                 final HttpEntity entity = ((HttpEntityEnclosingRequest) httpRequest).getEntity();
-                final String streamString = streamToString(entity.getContent());
-
                 // Handle post data params.
                 if (mimeType.toLowerCase().contains("application/x-www-form-urlencoded")) {
+                    final String streamString = streamToString(entity.getContent());
+
                     for (final String nvString : streamString.split("&")) {
                         final String[] nvPair = nvString.split("=");
                         final String name = nvPair[0];
@@ -170,8 +181,12 @@ public class Utils {
                         postDataParams.addPostDataParam(new HarPostDataParam(name, value));
                     }
                 } else {
-                    // TODO: Not all data should be converted to text.
-                    text = streamString;
+                    if (config.isExternal()) {
+                        final String sha256 = streamToFile(entity.getContent(), config.getEntityParentFolder());
+                        comment = "sha256=" + sha256;
+                    } else {
+                        text = streamToString(entity.getContent());
+                    }
                 }
 
                 bodySize = entity.getContentLength();
@@ -183,21 +198,18 @@ public class Utils {
         // Either params or text is set, never both.
         final HarPostData postData = new HarPostData(mimeType, postDataParams, text, comment);
 
+        // Set null comment for HarRequest.
         return new HarRequest(method, uri, httpVersion, cookies, headers, queryString, postData, headersSize, bodySize,
-                comment);
+                null);
     }
 
-    /** Converts stream to a string then closes the stream. **/
+    /** Converts stream to string. **/
     public static String streamToString(final InputStream input) {
         try {
-            final DataInputStream dataStream = new DataInputStream(input);
             final byte[] dataBytes = new byte[input.available()];
-            dataStream.readFully(dataBytes);
+            ByteStreams.readFully(input, dataBytes);
 
-            input.close();
-            dataStream.close();
-
-            return new String(dataBytes, "UTF-8");
+            return new String(dataBytes, UTF8);
         } catch (final Exception e) {
             e.printStackTrace();
         }
@@ -205,8 +217,32 @@ public class Utils {
         return null;
     }
 
+    /**
+     * Calculate SHA-256 value of given input stream. Save input stream to file
+     * using the digest for a name. Return the digest value as a string
+     **/
+    public static String streamToFile(final InputStream input, final String entityParentFolder) {
+        String fileName = null;
+
+        try {
+            final byte[] dataBytes = new byte[input.available()];
+            ByteStreams.readFully(input, dataBytes);
+
+            // shasum -a 256 file.txt
+            final MessageDigest sha256 = MessageDigest.getInstance(SHA256);
+            final byte[] digest = ByteStreams.getDigest(ByteStreams.newInputStreamSupplier(dataBytes), sha256);
+
+            fileName = Hex.encodeHexString(digest);
+            Files.write(dataBytes, new File(entityParentFolder, fileName));
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
+        return fileName;
+    }
+
     /** Response. **/
-    public static HarResponse createHarResponse(final HttpResponse httpResponse) {
+    public static HarResponse createHarResponse(final HttpResponse httpResponse, final HarvConfig config) {
         final StatusLine responseStatus = httpResponse.getStatusLine();
         final int status = responseStatus.getStatusCode();
         final String statusText = responseStatus.getReasonPhrase();
@@ -221,36 +257,44 @@ public class Utils {
         String mimeType = "";
         String encoding = "";
 
-        final HttpEntity contentEntity = httpResponse.getEntity();
-        if (contentEntity != null) {
-            size = contentEntity.getContentLength();
+        final HttpEntity entity = httpResponse.getEntity();
+        if (entity != null) {
+            size = entity.getContentLength();
             // TODO: Will mimeType be set properly?
-            mimeType = headerValue(contentEntity.getContentType());
-            encoding = headerValue(contentEntity.getContentEncoding());
+            mimeType = headerValue(entity.getContentType());
+            encoding = headerValue(entity.getContentEncoding());
         }
 
         // Compression is not implemented.
         final long compression = 0;
         String text = null;
+        String comment = null;
         try {
-            // TODO: Not all data should be converted to text.
-            text = streamToString(contentEntity.getContent());
+            if (config.isExternal()) {
+                final String sha256 = streamToFile(entity.getContent(), config.getEntityParentFolder());
+                comment = "sha256=" + sha256;
+            } else {
+                text = streamToString(entity.getContent());
+            }
         } catch (final Exception e) {
             e.printStackTrace();
         }
-        final String comment = null;
+
         // Does Location always represent the redirect URL?
         final String redirectURL = headerValue(httpResponse.getFirstHeader("Location"));
         final long bodySize = size;
 
         final HarContent content = new HarContent(size, compression, mimeType, text, encoding, comment);
 
+        // Set null comment for HarResponse.
         return new HarResponse(status, statusText, responseHttpVersion, cookies, headers, content, redirectURL,
-                headersSize, bodySize, comment);
+                headersSize, bodySize, null);
 
     }
 
-    public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final HarManager har) {
+    public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final HarManager har,
+            final HarvConfig config) {
+
         for (final IRequestLogRecord record : recordsList) {
 
             final String pageRef = null;
@@ -264,8 +308,8 @@ public class Utils {
             }
 
             final long time = record.getRequestMilliseconds();
-            final HarRequest request = createHarRequest(record.getRequest());
-            final HarResponse response = createHarResponse(record.getResponse());
+            final HarRequest request = createHarRequest(record.getRequest(), config);
+            final HarResponse response = createHarResponse(record.getResponse(), config);
             final HarCache cache = null;
             final HarEntryTimings timings = getFakeHarEntryTimings();
             final String serverIPAddress = null;
@@ -278,6 +322,7 @@ public class Utils {
         }
     }
 
+    /** wsNumber must be a string because "00" converts to "0" as an int. **/
     public static IWorkspace openWorkspaceByNumber(final String wsNumber) {
         final File ws = getDefaultWorkspace(wsNumber);
         p("Workspace: " + ws);
@@ -297,6 +342,7 @@ public class Utils {
         return openWorkspace;
     }
 
+    /** wsNumber must be a string because "00" converts to "0" as an int. **/
     public static File getDefaultWorkspace(final String wsNumber) {
         final File ws = new File(System.getProperty("user.home"), ".vega" + File.separator + "workspaces"
                 + File.separator + wsNumber);
