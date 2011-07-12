@@ -292,7 +292,7 @@ public class Utils {
 
     }
 
-    public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final HarManager har,
+    public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final Harv har,
             final HarvConfig config) {
 
         for (final IRequestLogRecord record : recordsList) {

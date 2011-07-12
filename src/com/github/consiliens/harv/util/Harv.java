@@ -22,7 +22,10 @@ import edu.umass.cs.benchlab.har.tools.HarFileWriter;
 /**
  * Manages the creation, feeding, and disposal of a HarLog.
  */
-public class HarManager {
+public class Harv {
+
+    public static final String name = "harv";
+    public static final String version = "1.0";
 
     private HarLog log;
     private HarEntries entries;
@@ -30,12 +33,16 @@ public class HarManager {
 
     /**
      * Create a new HarManager.
-     * @param creatorName the name of program creating the Har file
-     * @param creatorVersion the version of the program creating the Har file
-     * @param config the harv configuration settings
+     * 
+     * @param creatorName
+     *            the name of program creating the Har file
+     * @param creatorVersion
+     *            the version of the program creating the Har file
+     * @param config
+     *            the harv configuration settings
      */
-    public HarManager(final String creatorName, final String creatorVersion, final HarvConfig config) {
-        log = new HarLog(new HarCreator(creatorName, creatorVersion));
+    public Harv(final HarvConfig config) {
+        log = new HarLog(new HarCreator(name, version));
         entries = new HarEntries();
         this.config = config;
     }
@@ -76,7 +83,7 @@ public class HarManager {
         return config;
     }
 
-    public void setConfig(HarvConfig config) {
+    public void setConfig(final HarvConfig config) {
         this.config = config;
-    }       
+    }
 }
