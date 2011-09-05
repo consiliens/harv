@@ -5,7 +5,7 @@ HAR exporter for Subgraph Vega.
 
 ---
 
-Dependencies:
+### Dependencies
 
 * [Vega](https://github.com/subgraph/Vega)
 * [harlib-1.0b9.jar](https://github.com/downloads/consiliens/harv/harlib-1.0b9.jar)
@@ -14,7 +14,7 @@ Dependencies:
 
 ---
 
-Related Links:
+### Related Links
 
 * [HarLib website](https://sites.google.com/site/frogthinkerorg/projects/harlib)
 * [Patch applied to harlib-1.0b9.jar](https://gist.github.com/1192079)
