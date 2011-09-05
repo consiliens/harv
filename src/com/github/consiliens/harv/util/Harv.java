@@ -84,8 +84,7 @@ public class Harv {
 
         try {
             // Setup generator with proper escaping.
-            JsonFactory f = new JsonFactory();
-            JsonGenerator generator = f.createJsonGenerator(outputFile, JsonEncoding.UTF8);
+            JsonGenerator generator = new JsonFactory().createJsonGenerator(outputFile, JsonEncoding.UTF8);
             generator.useDefaultPrettyPrinter();
             generator.setCharacterEscapes(new CustomEscapes());
             generator.configure(Feature.ESCAPE_NON_ASCII, true);
