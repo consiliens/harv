@@ -3,22 +3,31 @@ HAR exporter for Subgraph Vega.
 
 [harv website](https://sites.google.com/site/consiliensharv/)
 
+---
+
 Dependencies:
 
 * [Vega](https://github.com/subgraph/Vega)
-* [harlib-jackson-1.0b8.jar](http://downloads.sourceforge.net/project/benchlab/HarLib/1.0b8/harlib-jackson-1.0b8.jar)
+* [harlib-1.0b9.jar](https://github.com/downloads/consiliens/harv/harlib-1.0b9.jar)
 * [guava-r09](http://guava-libraries.googlecode.com/files/guava-r09.zip)
+* [GSON 1.7.1](http://code.google.com/p/google-gson/downloads/detail?name=google-gson-1.7.1-release.zip&can=2&q=)
+
+---
 
 Related Links:
 
 * [HarLib website](https://sites.google.com/site/frogthinkerorg/projects/harlib)
-* [harlib-src-1.0b8.jar](http://sourceforge.net/projects/benchlab/files/HarLib/1.0b8/harlib-src-1.0b8.jar/download)
+* [Patch applied to harlib-1.0b9.jar](https://gist.github.com/1192079)
+
+---
 
 Developed using [Eclipse Indigo](http://www.eclipse.org/downloads/).
 
 Full [HAR v1.2](http://www.softwareishard.com/blog/har-12-spec) compliance is still a work in progress.
 
 harv is licensed under the [EPL v1.0](http://www.eclipse.org/legal/epl-v10.html).
+
+---
 
 ### Included 3rd party code
 
