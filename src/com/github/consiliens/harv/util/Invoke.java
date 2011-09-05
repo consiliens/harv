@@ -10,7 +10,7 @@ package com.github.consiliens.harv.util;
 import java.lang.reflect.Method;
 
 /**
- * Helper methods to work around the lack of a database API.
+ * Helper methods to work around Vega's current lack of a database API.
  */
 public abstract class Invoke {
 

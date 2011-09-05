@@ -9,8 +9,9 @@ package com.github.consiliens.harv.util;
 
 import java.io.File;
 
+/** Configuration object for use when creating a HAR file. **/
 public final class HarvConfig {
-    private String saveEntitiesToFolder = null;
+    private String entityParentFolder = null;
 
     /**
      * If saveEntitiesToFolder is null, entities default to being stored
@@ -18,26 +19,28 @@ public final class HarvConfig {
      * entities are saved in the entityParentFolder using their SHA256 value for
      * a name.
      */
-    public HarvConfig(final String saveEntitiesToFolder) {
-        final File folder = new File(saveEntitiesToFolder);
+    public HarvConfig(final String entityParentFolder) {
+        final File folder = new File(entityParentFolder);
 
         if (!folder.exists() || !folder.isDirectory() || !folder.canWrite())
             throw new IllegalArgumentException("saveEntitiesToFolder must be an existing writable directory.");
         else {
-            this.saveEntitiesToFolder = saveEntitiesToFolder;
+            this.entityParentFolder = entityParentFolder;
         }
     }
 
     /** Entities are saved externally if saveEntitiesToFolder isn't null. **/
     public boolean isExternal() {
-        return !(saveEntitiesToFolder == null);
+        return !(entityParentFolder == null);
     }
 
+    /** Gets entityParentFolder. **/
     public String getEntityParentFolder() {
-        return saveEntitiesToFolder;
+        return entityParentFolder;
     }
 
+    /** Sets entityParentFolder. **/
     public void setEntityParentFolder(final String entityParentFolder) {
-        saveEntitiesToFolder = entityParentFolder;
+        this.entityParentFolder = entityParentFolder;
     }
 }

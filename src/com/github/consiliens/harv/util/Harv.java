@@ -9,7 +9,13 @@ package com.github.consiliens.harv.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+
+import org.codehaus.jackson.JsonEncoding;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonGenerator.Feature;
 
 import com.subgraph.vega.api.model.requests.IRequestLogRecord;
 
@@ -47,6 +53,14 @@ public class Harv {
         this.config = config;
     }
 
+    /** Converts record to HAR file. **/
+    public void convertOneRecordToHAR(final IRequestLogRecord record) {
+        final List<IRequestLogRecord> recordsList = new ArrayList<IRequestLogRecord>(1);
+        recordsList.add(record);
+        Utils.convertRecordsToHAR(recordsList, this, config);
+    }
+
+    /** Converts a given list of records to a HAR file. **/
     public void convertRecordsToHAR(final List<IRequestLogRecord> recordsList) {
         Utils.convertRecordsToHAR(recordsList, this, config);
     }
@@ -69,7 +83,14 @@ public class Harv {
         log.setEntries(entries);
 
         try {
-            new HarFileWriter().writeHarFile(log, outputFile);
+            // Setup generator with proper escaping.
+            JsonFactory f = new JsonFactory();
+            JsonGenerator generator = f.createJsonGenerator(outputFile, JsonEncoding.UTF8);
+            generator.useDefaultPrettyPrinter();
+            generator.setCharacterEscapes(new CustomEscapes());
+            generator.configure(Feature.ESCAPE_NON_ASCII, true);
+
+            new HarFileWriter().writeHarFile(log, generator);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -79,10 +100,12 @@ public class Harv {
         entries = null;
     }
 
+    /** Gets config. **/
     public HarvConfig getConfig() {
         return config;
     }
 
+    /** Sets config. **/
     public void setConfig(final HarvConfig config) {
         this.config = config;
     }

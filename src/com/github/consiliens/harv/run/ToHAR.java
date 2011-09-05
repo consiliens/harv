@@ -26,7 +26,7 @@ import com.subgraph.vega.api.model.requests.IRequestLogRecord;
  * @author consiliens
  * 
  */
-public abstract class Run {
+public abstract class ToHAR {
 
     public static void main(final String[] args) {
         final String ws00 = "00";
@@ -37,7 +37,9 @@ public abstract class Run {
 
         final IWorkspace space = openWorkspaceByNumber(ws00);
         final List<IRequestLogRecord> allRecords = space.getRequestLog().getAllRecords();
-        har.convertRecordsToHAR(allRecords);
+
+        // har.convertRecordsToHAR(allRecords);
+        har.convertOneRecordToHAR(allRecords.get(5));
 
         space.close();
         har.endHAR(new File("test.har"));

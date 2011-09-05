@@ -34,6 +34,7 @@ import org.jboss.netty.handler.codec.http.CookieDateFormat;
 import org.jboss.netty.handler.codec.http.CookieDecoder;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
+import com.github.consiliens.harv.gson.R;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.subgraph.vega.api.model.IModel;
@@ -60,11 +61,13 @@ import edu.umass.cs.benchlab.har.HarRequest;
 import edu.umass.cs.benchlab.har.HarResponse;
 import edu.umass.cs.benchlab.har.ISO8601DateFormatter;
 
+/** Utils mostly related to creating a HAR file. **/
 public class Utils {
 
     public static final String UTF8 = "UTF-8";
     public static final String SHA256 = "SHA-256";
 
+    /** Prints the objects string value or "null" if null. **/
     public static void p(final Object o) {
         if (o == null) {
             System.out.println("null");
@@ -72,6 +75,11 @@ public class Utils {
         }
 
         System.out.println(o.toString());
+    }
+
+    /** Prints an empty string. **/
+    public static void p() {
+        System.out.println();
     }
 
     /** Create a fake object until Vega adds support for timings. **/
@@ -83,6 +91,12 @@ public class Utils {
         return new HarEntryTimings(send, wait, receive);
     }
 
+    /**
+     * Extracts headers from allHeaders and updates harHeaders and harCookies.
+     * 
+     * Returns the size of the headers (calculated by summing the length of
+     * each name and value in UTF8 bytes).
+     **/
     public static long extractHeadersAndCookies(final Header[] allHeaders, final HarHeaders harHeaders,
             final HarCookies harCookies) {
 
@@ -127,6 +141,7 @@ public class Utils {
         return headersSize;
     }
 
+    /** Gets the headers value.  Returns null if header is null. **/
     public static String headerValue(final Header header) {
         if (header != null)
             return header.getValue();
@@ -183,7 +198,7 @@ public class Utils {
                 } else {
                     if (config.isExternal()) {
                         final String sha256 = streamToFile(entity.getContent(), config.getEntityParentFolder());
-                        comment = "sha256=" + sha256;
+                        comment = R.shaPrefix + sha256;
                     } else {
                         text = streamToString(entity.getContent());
                     }
@@ -272,7 +287,7 @@ public class Utils {
         try {
             if (config.isExternal()) {
                 final String sha256 = streamToFile(entity.getContent(), config.getEntityParentFolder());
-                comment = "sha256=" + sha256;
+                comment = R.shaPrefix + sha256;
             } else {
                 text = streamToString(entity.getContent());
             }
@@ -292,6 +307,7 @@ public class Utils {
 
     }
 
+    /** Converts a list of IRequestLogRecord to a single HAR file. **/
     public static void convertRecordsToHAR(final List<IRequestLogRecord> recordsList, final Harv har,
             final HarvConfig config) {
 
@@ -322,11 +338,13 @@ public class Utils {
         }
     }
 
-    /** wsNumber must be a string because "00" converts to "0" as an int. **/
-    public static IWorkspace openWorkspaceByNumber(final String wsNumber) {
-        final File ws = getDefaultWorkspace(wsNumber);
-        p("Workspace: " + ws);
+    /** Should end with the number /user/workspace/00 **/
+    public static IWorkspace openWorkspacePath(final String path) {
+        return openWorkspaceFile(new File(path));
+    }
 
+    /** Opens a workspace based on the file path. **/
+    public static IWorkspace openWorkspaceFile(final File ws) {
         final IWorkspaceEntry entry = (IWorkspaceEntry) invokeStatic(WorkspaceEntry.class, "createFromPath", ws);
 
         final IModel model = new Model();
@@ -340,6 +358,13 @@ public class Utils {
         }
 
         return openWorkspace;
+    }
+
+    /** wsNumber must be a string because "00" converts to "0" as an int. **/
+    public static IWorkspace openWorkspaceByNumber(final String wsNumber) {
+        final File ws = getDefaultWorkspace(wsNumber);
+
+        return openWorkspaceFile(ws);
     }
 
     /** wsNumber must be a string because "00" converts to "0" as an int. **/
