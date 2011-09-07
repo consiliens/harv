@@ -8,7 +8,7 @@ HAR exporter for Subgraph Vega.
 ### Dependencies
 
 * [Vega](https://github.com/subgraph/Vega)
-* [harlib-1.0b9.jar](https://github.com/downloads/consiliens/harv/harlib-1.0b9.jar)
+* [harlib-1.0b10.jar](http://sourceforge.net/projects/benchlab/files/HarLib/1.0b10/harlib-jackson-1.0b10.jar/download)
 * [guava-r09](http://guava-libraries.googlecode.com/files/guava-r09.zip)
 * [GSON 1.7.1](http://code.google.com/p/google-gson/downloads/detail?name=google-gson-1.7.1-release.zip&can=2&q=)
 
@@ -17,7 +17,6 @@ HAR exporter for Subgraph Vega.
 ### Related Links
 
 * [HarLib website](https://sites.google.com/site/frogthinkerorg/projects/harlib)
-* [Patch applied to harlib-1.0b9.jar](https://gist.github.com/1192079)
 
 ---
 
