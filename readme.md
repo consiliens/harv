@@ -35,6 +35,8 @@ harv is licensed under the [EPL v1.0](http://www.eclipse.org/legal/epl-v10.html)
 * Cookie parsing 
 * QueryString parsing
 
-[commons-codec-1.5-src](http://commons.apache.org/codec/download_codec.cgi) provides encodeHexString.
+[commons-codec-1.5-src](http://commons.apache.org/codec/download_codec.cgi) provides:
 
-TODO: Mavenize harv.
+* encodeHexString.
+
+**TODO**: Mavenize harv.
